@@ -9,10 +9,14 @@ import (
         "golang.org/x/oauth2/google"
         "google.golang.org/api/compute/v1"
         "cloud.google.com/go/storage"
+	"github.com/fatih/color"
 )
 
 
-func GetFirewallRules(project string) {
+func GetFirewallRules(project string) []string{
+	green := color.New(color.FgGreen).SprintFunc()
+	fmt.Printf("[%s] Getting google_compute_firewall from googlecloud api for project:%s...",green("*"),project)
+	var fwlist []string
         ctx := context.Background()
         c, err := google.DefaultClient(ctx, compute.CloudPlatformScope)
         if err != nil {
@@ -25,14 +29,18 @@ func GetFirewallRules(project string) {
         req := computeService.Firewalls.List(project)
         if err := req.Pages(ctx, func(page *compute.FirewallList) error {
                 for _, firewall := range page.Items {
-                        fmt.Printf("%s\n", firewall.Direction)
+			fwlist = append(fwlist,firewall.Name)
                 }
                 return nil
         }); err != nil {
                 log.Fatal(err)
         }
+	fmt.Printf("%s\n",green("DONE"))
+	return fwlist
 }
 func DownloadTerraformState(w io.Writer, bucket, object string, destFileName string) error {
+	green := color.New(color.FgGreen).SprintFunc()
+	fmt.Printf("\n[%s] Downloading Terraform state from gs://%s/%s into %s...",green("*"),bucket,object,destFileName)
         ctx := context.Background()
         client, err := storage.NewClient(ctx)
         if err != nil {
@@ -58,10 +66,6 @@ func DownloadTerraformState(w io.Writer, bucket, object string, destFileName str
         if err = f.Close(); err != nil {
                 return fmt.Errorf("f.Close: %v", err)
         }
-        fmt.Fprintf(w, "Blob %v downloaded to local file %v\n", object, destFileName)
+	fmt.Printf("%s\n",green("DONE"))
         return nil
-}
-func main() {
-	DownloadTerraformState(os.Stdout,"test-stateconcile","realwinrm.py","here")
-	GetFirewallRules("myfreegke")
 }
