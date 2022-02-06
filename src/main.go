@@ -7,9 +7,9 @@ import (
 	"io/ioutil"
 	"log"
 	"fmt"
-	"math/rand"
 	"os"
-	"time"
+	"flag"
+	"strings"
 )
 
 type TerraformRawState struct {
@@ -71,8 +71,30 @@ func FindRules(targetrules []string, retlist map[string]bool) []string{
 	return notfound
 
 }
+func ParseGSUri(gsuri string) (string,string){
+	urisplit := strings.Split(gsuri,"/")
+	return urisplit[2],strings.Join(urisplit[3:],"/")
+}
+
+func AddRandoms(fwlist []string) []string{
+	for i := 0 ; i < 6 ; i ++ {
+		fwlist=append(fwlist,fmt.Sprintf("RandomRule%d",i))
+	}
+	return fwlist
+}
 func main() {
-	rand.Seed(time.Now().Unix())
+	var random = flag.Bool("random", false, "Insert Random Rules on GCP source")
+	var project = flag.String("project", "" , "Name of GCP project")
+	var state = flag.String("state", "" , "location gs://bucket/object")
+	flag.Parse()
+	bucket,object := ParseGSUri(*state)
+	// this should raise something..
+	if *project == "" {
+		log.Fatal("Error: -project string , needed")
+	}
+	if *state== "" {
+		log.Fatal("Error: -state gs://....., needed")
+	}
 	// reasons := []string{
 	// 	"allow-some-rule",
 	// }
@@ -81,12 +103,16 @@ func main() {
 	// 	n = rand.Int() % len(reasons)
 	// 	fmt.Printf("%s --> %t\n", reasons[n], FindRule(reasons[n], rules))
 	// }
-	terraformrealstate :=  "terraform.tfstate"
-	_ = googleactions.DownloadTerraformState(os.Stdout, "test-stateconcile", "terraform.tfstate", "working.tfstate")
+	_ = googleactions.DownloadTerraformState(os.Stdout, bucket, object, "working.tfstate")
 	version,tfrules := BuildRules("working.tfstate")
-	fwlist := googleactions.GetFirewallRules("myfreegke")
+	fwlist := googleactions.GetFirewallRules(*project)
+	if *random == true {
+		yellow:= color.New(color.FgYellow).SprintFunc()
+		fmt.Printf("[%s] >> Adding random soruce rules",yellow("INFO"))
+		fwlist = AddRandoms(fwlist)
+	}
 	red := color.New(color.FgRed).SprintFunc()
-	fmt.Printf("\n[%s] >> Rules found in GCP but missing in Terraform State: %s on Version: %s\n",red("Warning"),red(terraformrealstate),red(version))
+	fmt.Printf("\n[%s] >> Rules found in GCP but missing in Terraform State: %s on Version: %s\n",red("Warning"),red("gs://",bucket,"/",object),red(version))
 	foundrules := FindRules(fwlist,tfrules)
 	for i := 0; i < len(foundrules) ; i ++ {
 		fmt.Printf("%s google_compute_firewall.%s -> %s\n",red("*"),foundrules[i],red("missing"))
