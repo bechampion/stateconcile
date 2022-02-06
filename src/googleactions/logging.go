@@ -3,17 +3,12 @@ package main
 import (
 	"fmt"
 	"log"
-	// "time"
-
-	// [START imports]
+	"time"
 	"context"
-
 	"cloud.google.com/go/logging"
 	"cloud.google.com/go/logging/logadmin"
-
 	"encoding/json"
 	"google.golang.org/api/iterator"
-	// [END imports]
 )
 
 type Payload struct {
@@ -27,15 +22,12 @@ type Payload struct {
 
 func main() {
 	payload := Payload{}
-	entries, _ := getEntries("myfreegke")
-	log.Printf("Found %d entries.", len(entries))
+	entries, _ := GetLogEntries("myfreegke","projects/myfreegke/global/firewalls/test-logging")
 	for _, entry := range entries {
-		// fmt.Printf("Entry: @%s: %v\n",
-		// 	entry.Timestamp.Format(time.RFC3339),
-		// 	entry.Payload)
 		pp, _ := json.Marshal(entry.Payload)
 		_ = json.Unmarshal(pp, &payload)
 		if entry.Operation.First == true {
+			fmt.Println(entry.Timestamp.Format(time.RFC3339))
 			fmt.Println(payload.ResourceName)
 			fmt.Println(payload.ServiceName)
 			fmt.Println(payload.AuthenticationInfo.PrincipalEmail)
@@ -44,7 +36,10 @@ func main() {
 
 }
 
-func getEntries(projID string) ([]*logging.Entry, error) {
+func GetLogEntries(projID string,fwname string) ([]*logging.Entry, error) {
+	currentTime := time.Now()
+	today := currentTime.Format("2006-01-02")
+
 	ctxx := context.Background()
 	client, err := logging.NewClient(ctxx, projID)
 	if err != nil {
@@ -65,7 +60,7 @@ func getEntries(projID string) ([]*logging.Entry, error) {
 	// lastHour := time.Now().Add(-5 * time.Hour).Format(time.RFC3339)
 
 	iter := adminClient.Entries(ctx,
-		logadmin.Filter(fmt.Sprintf(`resource.type = "gce_firewall_rule" protoPayload.methodName:"v1.compute.firewalls.insert"`)),
+		logadmin.Filter(fmt.Sprintf(`resource.type = "gce_firewall_rule" protoPayload.methodName:"v1.compute.firewalls.insert" protoPayload.resourceName="%s" timestamp > "%s"`,fwname,today)),
 		logadmin.NewestFirst(),
 	)
 
