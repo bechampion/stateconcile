@@ -27,11 +27,12 @@ type TerraformRawState struct {
 	} `json:"resources"`
 }
 
-type GcloudFirewallRule struct {
-	Id        string `json:"id"`
-	Disabled  bool   `json:"disabled"`
-	Direction string `json:"direction"`
-}
+// not unmarshalling gcloud firewall rules as using SDK
+// type GcloudFirewallRule struct {
+// 	Id        string `json:"id"`
+// 	Disabled  bool   `json:"disabled"`
+// 	Direction string `json:"direction"`
+// }
 func Banner() {
 	red := color.New(color.FgRed)
 	whiteBackground := red.Add(color.BgWhite)
