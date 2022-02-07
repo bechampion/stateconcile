@@ -2,6 +2,7 @@ package main
 
 import (
 	googleactions "./googleactions"
+	logging "./logging"
 	"encoding/json"
 	"github.com/fatih/color"
 	"io/ioutil"
@@ -59,6 +60,18 @@ func BuildRules(terraformstate string) (int , map[string]bool) {
 	}
 	return tfw.Version,retlist
 }
+func FindRulesLogging(targetrules []string, retlist map[string]bool,logs bool) []string{
+	var notfound []string
+	for i := 0; i < len(targetrules); i++ {
+		if _, ok := retlist[targetrules[i]]; ok {
+		}else {
+			notfound = append(notfound,targetrules[i])
+
+		}
+	}
+	return notfound
+
+}
 func FindRules(targetrules []string, retlist map[string]bool) []string{
 	var notfound []string
 	for i := 0; i < len(targetrules); i++ {
@@ -84,6 +97,7 @@ func AddRandoms(fwlist []string) []string{
 }
 func main() {
 	var random = flag.Bool("random", false, "Insert Random Rules on GCP source")
+	var logs = flag.Bool("logs", false, "find logs matching the resources")
 	var project = flag.String("project", "" , "Name of GCP project")
 	var state = flag.String("state", "" , "location gs://bucket/object")
 	flag.Parse()
@@ -113,10 +127,15 @@ func main() {
 	}
 	red := color.New(color.FgRed).SprintFunc()
 	fmt.Printf("\n[%s] >> Rules found in GCP but missing in Terraform State: %s on Version: %s\n",red("Warning"),red("gs://",bucket,"/",object),red(version))
-	foundrules := FindRules(fwlist,tfrules)
+	if *logs == true {
+		foundrules := FindRulesLogging(fwlist,tfrules,logs)
+	}else{
+		foundrules := FindRules(fwlist,tfrules,logs)
+	}
 	for i := 0; i < len(foundrules) ; i ++ {
 		fmt.Printf("%s google_compute_firewall.%s -> %s\n",red("*"),foundrules[i],red("missing"))
 	}
+
 	fmt.Printf("\n")
 
 
