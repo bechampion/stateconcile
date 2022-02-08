@@ -9,4 +9,4 @@ runlogsi:
 logs:
 	@./main -project myfreegke -state gs://test-stateconcile/terraform.tfstate -logs
 drift:
-	@./main -project myfreegke -state gs://test-stateconcile/terraform.tfstate
+	@go run main.go -project myfreegke -state gs://test-stateconcile/terraform.tfstate -ignoreauto -logs
