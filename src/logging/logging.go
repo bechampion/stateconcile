@@ -18,6 +18,10 @@ type Payload struct {
 	AuthenticationInfo struct {
 		PrincipalEmail string `json:"principal_email"`
 	} `json:"authentication_info"`
+	RequestMetaData struct {
+		CallerIP                string `json:"caller_ip"`
+		CallerSuppliedUserAgent string `json:"caller_supplied_user_agent"`
+	} `json:"request_metadata"`
 }
 
 func GetLogEntries(projID string) ([]*logging.Entry, error) {
@@ -48,8 +52,7 @@ func GetLogEntries(projID string) ([]*logging.Entry, error) {
 		logadmin.NewestFirst(),
 	)
 
-	// Fetch the most recent 20 entries.
-	for len(entries) < 20 {
+	for len(entries) < 200 {
 		entry, err := iter.Next()
 		if err == iterator.Done {
 			return entries, nil
@@ -60,25 +63,30 @@ func GetLogEntries(projID string) ([]*logging.Entry, error) {
 		entries = append(entries, entry)
 	}
 	return entries, nil
-	// [END logging_list_log_entries]
 }
 func HashedLoggingEntries(projID string) map[string]Payload {
 	hashedloggingentries := map[string]Payload{}
 	payload := Payload{}
 	entries, _ := GetLogEntries(projID)
 	for _, entry := range entries {
+		// fmt.Println(entry)
 		pp, _ := json.Marshal(entry.Payload)
 		_ = json.Unmarshal(pp, &payload)
 		if entry.Operation.First == true {
 			hashedloggingentries[payload.ResourceName] = payload
-		// 	fmt.Println(entry.Timestamp.Format(time.RFC3339))
-		// 	fmt.Println(payload.ResourceName)
-		// 	fmt.Println(payload.ServiceName)
-		// 	fmt.Println(payload.AuthenticationInfo.PrincipalEmail)
+			// 	fmt.Println(entry.Timestamp.Format(time.RFC3339))
+			// 	fmt.Println(payload.ResourceName)
+			// 	fmt.Println(payload.ServiceName)
+			// 	fmt.Println(payload.AuthenticationInfo.PrincipalEmail)
 		}
 	}
 	return hashedloggingentries
 }
 func main() {
 	fmt.Println(HashedLoggingEntries("myfreegke"))
- }
+	ll := HashedLoggingEntries("myfreegke")
+	for k, v := range ll {
+		fmt.Printf("%s ---> %v", k, v)
+
+	}
+}
