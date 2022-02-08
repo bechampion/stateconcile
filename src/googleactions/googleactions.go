@@ -31,7 +31,7 @@ func GetFirewallRules(project string, ignoreauto bool) []string {
 	req := computeService.Firewalls.List(project)
 	_ = r
 	if ignoreauto {
-		r, _ = regexp.Compile("^(k8s|gke)(-|_|[0-9][a-z])*")
+		r, _ = regexp.Compile("^(default|k8s|gke)(-|_|[0-9][a-z])*")
 	}
 	if err := req.Pages(ctx, func(page *compute.FirewallList) error {
 		for _, firewall := range page.Items {
