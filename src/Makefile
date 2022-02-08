@@ -1,3 +1,5 @@
+##custom
+export GOOGLE_APPLICATION_CREDENTIALS=/home/${USER}/Downloads/myfreegke-a9a1319ec918.json
 .PHONY: default
 default: drift
 logs:
