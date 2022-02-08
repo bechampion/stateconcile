@@ -12,16 +12,19 @@ import (
 )
 
 type Payload struct {
-	ServiceName        string `json:"service_name"`
-	MethodName         string `json:"method_name"`
-	ResourceName       string `json:"resource_name"`
-	AuthenticationInfo struct {
-		PrincipalEmail string `json:"principal_email"`
-	} `json:"authentication_info"`
-	RequestMetaData struct {
-		CallerIP                string `json:"caller_ip"`
-		CallerSuppliedUserAgent string `json:"caller_supplied_user_agent"`
-	} `json:"request_metadata"`
+	TimeStamp string `json:"timestamp"`
+	Payload   struct {
+		ServiceName        string `json:"service_name"`
+		MethodName         string `json:"method_name"`
+		ResourceName       string `json:"resource_name"`
+		AuthenticationInfo struct {
+			PrincipalEmail string `json:"principal_email"`
+		} `json:"authentication_info"`
+		RequestMetaData struct {
+			CallerIP                string `json:"caller_ip"`
+			CallerSuppliedUserAgent string `json:"caller_supplied_user_agent"`
+		} `json:"request_metadata"`
+	} `json:"payload"`
 }
 
 func GetLogEntries(projID string) ([]*logging.Entry, error) {
@@ -69,12 +72,10 @@ func HashedLoggingEntries(projID string) map[string]Payload {
 	payload := Payload{}
 	entries, _ := GetLogEntries(projID)
 	for _, entry := range entries {
-		// fmt.Println(entry)
-		pp, _ := json.Marshal(entry.Payload)
+		pp, _ := json.Marshal(entry)
 		_ = json.Unmarshal(pp, &payload)
 		if entry.Operation.First == true {
-			hashedloggingentries[payload.ResourceName] = payload
-			// 	fmt.Println(entry.Timestamp.Format(time.RFC3339))
+			hashedloggingentries[payload.Payload.ResourceName] = payload
 			// 	fmt.Println(payload.ResourceName)
 			// 	fmt.Println(payload.ServiceName)
 			// 	fmt.Println(payload.AuthenticationInfo.PrincipalEmail)

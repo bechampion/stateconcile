@@ -142,7 +142,7 @@ func main() {
 		fmt.Printf("%s google_compute_firewall.%s -> %s\n", red("*"), k, red("missing"))
 		if v != (logging.Payload{}) {
 			fmt.Printf("\t[%s]\n",blue("logs"))
-			fmt.Printf("\tServiceName:%s\n\tResourceName:%s\n\tMethodName:%s\n\tPrincipalEmail:%s\n\tCallerIP:%s\n\tUserAgent:%s\n",v.ServiceName , v.ResourceName , v.MethodName , v.AuthenticationInfo.PrincipalEmail,v.RequestMetaData.CallerIP,v.RequestMetaData.CallerSuppliedUserAgent)
+			fmt.Printf("\tTimeStamp:%s\n\tServiceName:%s\n\tResourceName:%s\n\tMethodName:%s\n\tPrincipalEmail:%s\n\tCallerIP:%s\n\tUserAgent:%s\n",v.TimeStamp,v.Payload.ServiceName , v.Payload.ResourceName , v.Payload.MethodName , v.Payload.AuthenticationInfo.PrincipalEmail,v.Payload.RequestMetaData.CallerIP,v.Payload.RequestMetaData.CallerSuppliedUserAgent)
 		}
 	}
 
