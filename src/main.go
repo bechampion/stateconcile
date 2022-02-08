@@ -58,7 +58,7 @@ func FindRules(targetrules []string, retlist map[string]bool, logs *bool, projec
 	notfound := make(map[string]logging.Payload)
 	if *logs == true {
 		yellow := color.New(color.FgYellow).SprintFunc()
-		fmt.Printf("[%s] >> Logs enabled only searching withing 24hs ", yellow("INFO"))
+		fmt.Printf("[%s] >> Logs enabled only searching withing 24hs\n", yellow("INFO"))
 		hashedlogs := logging.HashedLoggingEntries("myfreegke")
 		_ = hashedlogs
 
