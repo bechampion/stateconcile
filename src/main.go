@@ -30,9 +30,18 @@ type TerraformRawState struct {
 
 func Banner() {
 	red := color.New(color.FgRed)
-	whiteBackground := red.Add(color.BgWhite)
-	whiteBackground.Println("[[[[ StateConcile ]]]]")
-	fmt.Printf("\n")
+	name := `
+  ██████ ▄▄▄█████▓ ▄▄▄     ▄▄▄█████▓▓█████  ▄████▄   ▒█████   ███▄    █  ▄████▄   ██▓ ██▓    ▓█████ 
+▒██    ▒ ▓  ██▒ ▓▒▒████▄   ▓  ██▒ ▓▒▓█   ▀ ▒██▀ ▀█  ▒██▒  ██▒ ██ ▀█   █ ▒██▀ ▀█  ▓██▒▓██▒    ▓█   ▀ 
+░ ▓██▄   ▒ ▓██░ ▒░▒██  ▀█▄ ▒ ▓██░ ▒░▒███   ▒▓█    ▄ ▒██░  ██▒▓██  ▀█ ██▒▒▓█    ▄ ▒██▒▒██░    ▒███   
+  ▒   ██▒░ ▓██▓ ░ ░██▄▄▄▄██░ ▓██▓ ░ ▒▓█  ▄ ▒▓▓▄ ▄██▒▒██   ██░▓██▒  ▐▌██▒▒▓▓▄ ▄██▒░██░▒██░    ▒▓█  ▄ 
+▒██████▒▒  ▒██▒ ░  ▓█   ▓██▒ ▒██▒ ░ ░▒████▒▒ ▓███▀ ░░ ████▓▒░▒██░   ▓██░▒ ▓███▀ ░░██░░██████▒░▒████▒
+▒ ▒▓▒ ▒ ░  ▒ ░░    ▒▒   ▓▒█░ ▒ ░░   ░░ ▒░ ░░ ░▒ ▒  ░░ ▒░▒░▒░ ░ ▒░   ▒ ▒ ░ ░▒ ▒  ░░▓  ░ ▒░▓  ░░░ ▒░ ░
+░ ░▒  ░ ░    ░      ▒   ▒▒ ░   ░     ░ ░  ░  ░  ▒     ░ ▒ ▒░ ░ ░░   ░ ▒░  ░  ▒    ▒ ░░ ░ ▒  ░ ░ ░  ░
+░  ░  ░    ░        ░   ▒    ░         ░   ░        ░ ░ ░ ▒     ░   ░ ░ ░         ▒ ░  ░ ░      ░   
+`
+	red.Println(name)
+	fmt.Printf("\n(Finds differences between state and gcp and more..)\n")
 }
 
 func BuildRules(terraformstate string) (int, map[string]bool) {
@@ -58,15 +67,15 @@ func FindRules(targetrules []string, retlist map[string]bool, logs *bool, projec
 	notfound := make(map[string]logging.Payload)
 	if *logs == true {
 		yellow := color.New(color.FgYellow).SprintFunc()
-		fmt.Printf("[%s] >> Logs enabled only searching withing 24hs\n", yellow("INFO"))
+		fmt.Printf("[%s] Logs enabled , only searching within 24hs and less than 200 records for the given type\n", yellow("*"))
 		hashedlogs := logging.HashedLoggingEntries("myfreegke")
 		_ = hashedlogs
 
 		for i := 0; i < len(targetrules); i++ {
 			if _, ok := retlist[targetrules[i]]; ok {
 			} else {
-				if _, ok := hashedlogs[fmt.Sprintf("projects/%s/global/firewalls/%s", *project , targetrules[i])]; ok {
-					notfound[targetrules[i]] = hashedlogs[fmt.Sprintf("projects/%s/global/firewalls/%s",*project, targetrules[i])]
+				if _, ok := hashedlogs[fmt.Sprintf("projects/%s/global/firewalls/%s", *project, targetrules[i])]; ok {
+					notfound[targetrules[i]] = hashedlogs[fmt.Sprintf("projects/%s/global/firewalls/%s", *project, targetrules[i])]
 				} else {
 					notfound[targetrules[i]] = logging.Payload{}
 				}
@@ -98,9 +107,10 @@ func AddRandoms(fwlist []string) []string {
 	return fwlist
 }
 func main() {
+	var nobanner = flag.Bool("nobanner", true, "Want to see banner?")
 	var random = flag.Bool("random", false, "Insert Random Rules on GCP source")
 	var logs = flag.Bool("logs", false, "find logs matching the resources")
-	var ignoreauto= flag.Bool("ignoreauto", false, "Ignore GKE rules and others")
+	var ignoreauto = flag.Bool("ignoreauto", false, "Ignore GKE rules and others")
 	var project = flag.String("project", "", "Name of GCP project")
 	var state = flag.String("state", "", "location gs://bucket/object")
 	flag.Parse()
@@ -111,23 +121,28 @@ func main() {
 	if *state == "" {
 		log.Fatal("Error: -state gs://....., needed")
 	}
+	if *nobanner {
+		Banner()
+	}
 	_ = googleactions.DownloadTerraformState(os.Stdout, bucket, object, "working.tfstate")
 	version, tfrules := BuildRules("working.tfstate")
-	fwlist := googleactions.GetFirewallRules(*project,*ignoreauto)
+	fwlist := googleactions.GetFirewallRules(*project, *ignoreauto)
 	if *random == true {
 		yellow := color.New(color.FgYellow).SprintFunc()
-		fmt.Printf("[%s] >> Adding random soruce rules", yellow("INFO"))
+		fmt.Printf("[%s] Adding random soruce rules", yellow("*"))
 		fwlist = AddRandoms(fwlist)
 	}
 	red := color.New(color.FgRed).SprintFunc()
 	blue := color.New(color.FgBlue).SprintFunc()
-	fmt.Printf("\n[%s] >> Rules found in GCP but missing in Terraform State: %s on Version: %s\n", red("Warning"), red("gs://", bucket, "/", object), red(version))
-	foundrules := FindRules(fwlist, tfrules, logs,project)
+	foundrules := FindRules(fwlist, tfrules, logs, project)
+	if len(foundrules) > 0 {
+		fmt.Printf("[%s] %s Rules found in GCP but missing in Terraform State: %s on Version: %s\n", red("*"), red(len(foundrules)),red("gs://", bucket, "/", object), red(version))
+	}
 	for k, v := range foundrules {
 		fmt.Printf("%s google_compute_firewall.%s -> %s\n", red("*"), k, red("missing"))
 		if v != (logging.Payload{}) {
-			fmt.Printf("\t[%s]\n",blue("logs"))
-			fmt.Printf("\tTimeStamp:%s\n\tServiceName:%s\n\tResourceName:%s\n\tMethodName:%s\n\tPrincipalEmail:%s\n\tCallerIP:%s\n\tUserAgent:%s\n",red(v.TimeStamp),v.Payload.ServiceName , red(v.Payload.ResourceName) , v.Payload.MethodName , red(v.Payload.AuthenticationInfo.PrincipalEmail),v.Payload.RequestMetaData.CallerIP,v.Payload.RequestMetaData.CallerSuppliedUserAgent)
+			fmt.Printf("\t[%s]\n", blue("logs"))
+			fmt.Printf("\tTimeStamp:%s\n\tServiceName:%s\n\tResourceName:%s\n\tMethodName:%s\n\tPrincipalEmail:%s\n\tCallerIP:%s\n\tUserAgent:%s\n", red(v.TimeStamp), v.Payload.ServiceName, red(v.Payload.ResourceName), v.Payload.MethodName, red(v.Payload.AuthenticationInfo.PrincipalEmail), v.Payload.RequestMetaData.CallerIP, v.Payload.RequestMetaData.CallerSuppliedUserAgent)
 		}
 	}
 
