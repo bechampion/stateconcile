@@ -124,7 +124,11 @@ func main() {
 	if *nobanner {
 		Banner()
 	}
-	_ = googleactions.DownloadTerraformState(os.Stdout, bucket, object, "working.tfstate")
+	err := googleactions.DownloadTerraformState(os.Stdout, bucket, object, "working.tfstate")
+	if err != nil {
+		log.Fatal("\nFailed at downloading state")
+
+	}
 	version, tfrules := BuildRules("working.tfstate")
 	fwlist := googleactions.GetFirewallRules(*project, *ignoreauto)
 	if *random == true {
