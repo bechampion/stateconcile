@@ -28,12 +28,6 @@ type TerraformRawState struct {
 	} `json:"resources"`
 }
 
-// not unmarshalling gcloud firewall rules as using SDK
-// type GcloudFirewallRule struct {
-// 	Id        string `json:"id"`
-// 	Disabled  bool   `json:"disabled"`
-// 	Direction string `json:"direction"`
-// }
 func Banner() {
 	red := color.New(color.FgRed)
 	whiteBackground := red.Add(color.BgWhite)
@@ -71,7 +65,6 @@ func FindRules(targetrules []string, retlist map[string]bool, logs *bool, projec
 		for i := 0; i < len(targetrules); i++ {
 			if _, ok := retlist[targetrules[i]]; ok {
 			} else {
-				// notfound = append(notfound,targetrules[i])
 				if _, ok := hashedlogs[fmt.Sprintf("projects/%s/global/firewalls/%s", *project , targetrules[i])]; ok {
 					notfound[targetrules[i]] = hashedlogs[fmt.Sprintf("projects/%s/global/firewalls/%s",*project, targetrules[i])]
 				} else {
@@ -107,28 +100,20 @@ func AddRandoms(fwlist []string) []string {
 func main() {
 	var random = flag.Bool("random", false, "Insert Random Rules on GCP source")
 	var logs = flag.Bool("logs", false, "find logs matching the resources")
+	var ignoreauto= flag.Bool("ignoreauto", false, "Ignore GKE rules and others")
 	var project = flag.String("project", "", "Name of GCP project")
 	var state = flag.String("state", "", "location gs://bucket/object")
 	flag.Parse()
 	bucket, object := ParseGSUri(*state)
-	// this should raise something..
 	if *project == "" {
 		log.Fatal("Error: -project string , needed")
 	}
 	if *state == "" {
 		log.Fatal("Error: -state gs://....., needed")
 	}
-	// reasons := []string{
-	// 	"allow-some-rule",
-	// }
-	// // var n int = 0
-	// for i := 0; i < 20; i++ {
-	// 	n = rand.Int() % len(reasons)
-	// 	fmt.Printf("%s --> %t\n", reasons[n], FindRule(reasons[n], rules))
-	// }
 	_ = googleactions.DownloadTerraformState(os.Stdout, bucket, object, "working.tfstate")
 	version, tfrules := BuildRules("working.tfstate")
-	fwlist := googleactions.GetFirewallRules(*project)
+	fwlist := googleactions.GetFirewallRules(*project,*ignoreauto)
 	if *random == true {
 		yellow := color.New(color.FgYellow).SprintFunc()
 		fmt.Printf("[%s] >> Adding random soruce rules", yellow("INFO"))

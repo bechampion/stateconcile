@@ -3,7 +3,7 @@ export GOOGLE_APPLICATION_CREDENTIALS=/home/${USER}/Downloads/myfreegke-a9a1319e
 .PHONY: default
 default: drift
 runlogs:
-	@go run main.go -project myfreegke -state gs://test-stateconcile/terraform.tfstate -logs
+	@go run main.go -project myfreegke -state gs://test-stateconcile/terraform.tfstate -logs -ignoreauto
 logs:
 	@./main -project myfreegke -state gs://test-stateconcile/terraform.tfstate -logs
 drift:

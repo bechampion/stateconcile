@@ -45,10 +45,8 @@ func GetLogEntries(projID string) ([]*logging.Entry, error) {
 	defer adminClient.Close()
 	ctx := context.Background()
 
-	// [START logging_list_log_entries]
 	var entries []*logging.Entry
 	const name = "log-example"
-	// lastHour := time.Now().Add(-5 * time.Hour).Format(time.RFC3339)
 
 	iter := adminClient.Entries(ctx,
 		logadmin.Filter(fmt.Sprintf(`resource.type = "gce_firewall_rule" protoPayload.methodName:"v1.compute.firewalls.insert" timestamp > "%s"`, today)),
@@ -72,13 +70,12 @@ func HashedLoggingEntries(projID string) map[string]Payload {
 	payload := Payload{}
 	entries, _ := GetLogEntries(projID)
 	for _, entry := range entries {
+		// I really dislike this, but i guess someone was really lazy google sdk
+		//https://github.com/googleapis/google-cloud-go/blob/v0.34.0/logging/logging.go#L554
 		pp, _ := json.Marshal(entry)
 		_ = json.Unmarshal(pp, &payload)
 		if entry.Operation.First == true {
 			hashedloggingentries[payload.Payload.ResourceName] = payload
-			// 	fmt.Println(payload.ResourceName)
-			// 	fmt.Println(payload.ServiceName)
-			// 	fmt.Println(payload.AuthenticationInfo.PrincipalEmail)
 		}
 	}
 	return hashedloggingentries
