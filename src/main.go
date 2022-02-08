@@ -60,7 +60,7 @@ func BuildRules(terraformstate string) (int, map[string]bool) {
 	}
 	return tfw.Version, retlist
 }
-func FindRules(targetrules []string, retlist map[string]bool, logs *bool) map[string]logging.Payload {
+func FindRules(targetrules []string, retlist map[string]bool, logs *bool, project *string) map[string]logging.Payload {
 	notfound := make(map[string]logging.Payload)
 	if *logs == true {
 		yellow := color.New(color.FgYellow).SprintFunc()
@@ -72,8 +72,8 @@ func FindRules(targetrules []string, retlist map[string]bool, logs *bool) map[st
 			if _, ok := retlist[targetrules[i]]; ok {
 			} else {
 				// notfound = append(notfound,targetrules[i])
-				if _, ok := hashedlogs[fmt.Sprintf("projects/myfreegke/global/firewalls/%s", targetrules[i])]; ok {
-					notfound[targetrules[i]] = hashedlogs[fmt.Sprintf("projects/myfreegke/global/firewalls/%s", targetrules[i])]
+				if _, ok := hashedlogs[fmt.Sprintf("projects/%s/global/firewalls/%s", *project , targetrules[i])]; ok {
+					notfound[targetrules[i]] = hashedlogs[fmt.Sprintf("projects/%s/global/firewalls/%s",*project, targetrules[i])]
 				} else {
 					notfound[targetrules[i]] = logging.Payload{}
 				}
@@ -137,7 +137,7 @@ func main() {
 	red := color.New(color.FgRed).SprintFunc()
 	blue := color.New(color.FgBlue).SprintFunc()
 	fmt.Printf("\n[%s] >> Rules found in GCP but missing in Terraform State: %s on Version: %s\n", red("Warning"), red("gs://", bucket, "/", object), red(version))
-	foundrules := FindRules(fwlist, tfrules, logs)
+	foundrules := FindRules(fwlist, tfrules, logs,project)
 	for k, v := range foundrules {
 		fmt.Printf("%s google_compute_firewall.%s -> %s\n", red("*"), k, red("missing"))
 		if v != (logging.Payload{}) {
