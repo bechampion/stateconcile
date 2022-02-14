@@ -58,7 +58,7 @@ func Output(foundrules map[string]logging.Payload, format string) {
 
 		fmt.Printf("\n")
 	} else {
-		jj,err := json.Marshal(foundrules)
+		jj, err := json.Marshal(foundrules)
 		if err != nil {
 			log.Fatal("Something went wrong")
 
@@ -85,19 +85,21 @@ func BuildRules(terraformstate string) (int, map[string]bool) {
 	}
 	return tfw.Version, retlist
 }
-func FindRules(targetrules []string, retlist map[string]bool, logs *bool, project *string) map[string]logging.Payload {
+func FindRules(targetrules []string, retlist map[string]bool, logs bool, project string, jsonoutput bool, bucket string, object string, version int) map[string]logging.Payload {
 	notfound := make(map[string]logging.Payload)
-	if *logs == true {
-		yellow := color.New(color.FgYellow).SprintFunc()
-		fmt.Printf("[%s] Logs enabled , only searching within 24hs and less than 200 records for the given type\n", yellow("*"))
+	if logs == true {
+		if jsonoutput == false {
+			yellow := color.New(color.FgYellow).SprintFunc()
+			fmt.Printf("[%s] Logs enabled , only searching within 24hs and less than 200 records for the given type\n", yellow("*"))
+		}
 		hashedlogs := logging.HashedLoggingEntries("myfreegke")
 		_ = hashedlogs
 
 		for i := 0; i < len(targetrules); i++ {
 			if _, ok := retlist[targetrules[i]]; ok {
 			} else {
-				if _, ok := hashedlogs[fmt.Sprintf("projects/%s/global/firewalls/%s", *project, targetrules[i])]; ok {
-					notfound[targetrules[i]] = hashedlogs[fmt.Sprintf("projects/%s/global/firewalls/%s", *project, targetrules[i])]
+				if _, ok := hashedlogs[fmt.Sprintf("projects/%s/global/firewalls/%s", project, targetrules[i])]; ok {
+					notfound[targetrules[i]] = hashedlogs[fmt.Sprintf("projects/%s/global/firewalls/%s", project, targetrules[i])]
 				} else {
 					notfound[targetrules[i]] = logging.Payload{}
 				}
@@ -113,6 +115,10 @@ func FindRules(targetrules []string, retlist map[string]bool, logs *bool, projec
 			}
 		}
 
+	}
+	if len(notfound) > 0 && jsonoutput == false {
+		red := color.New(color.FgRed).SprintFunc()
+		fmt.Printf("[%s] %s Rules found in GCP but missing in Terraform State: %s on Version: %s\n", red("*"), red(len(notfound)), red("gs://", bucket, "/", object), red(version))
 	}
 	return notfound
 
@@ -147,26 +153,22 @@ func main() {
 	if !(*nobanner || *jsonoutput) {
 		Banner()
 	}
-	err := googleactions.DownloadTerraformState(os.Stdout, bucket, object, "working.tfstate")
+	err := googleactions.DownloadTerraformState(os.Stdout, bucket, object, "working.tfstate", *jsonoutput)
 	if err != nil {
 		log.Fatal("\nFailed at downloading state")
 
 	}
 	version, tfrules := BuildRules("working.tfstate")
-	fwlist := googleactions.GetFirewallRules(*project, *ignoreauto)
-	if *random == true {
+	fwlist := googleactions.GetFirewallRules(*project, *ignoreauto, *jsonoutput)
+	if *random == true && *jsonoutput == false {
 		yellow := color.New(color.FgYellow).SprintFunc()
 		fmt.Printf("[%s] Adding random soruce rules", yellow("*"))
 		fwlist = AddRandoms(fwlist)
 	}
-	red := color.New(color.FgRed).SprintFunc()
-	foundrules := FindRules(fwlist, tfrules, logs, project)
-	if len(foundrules) > 0 {
-		fmt.Printf("[%s] %s Rules found in GCP but missing in Terraform State: %s on Version: %s\n", red("*"), red(len(foundrules)), red("gs://", bucket, "/", object), red(version))
-	}
-	if *jsonoutput{ 
+	foundrules := FindRules(fwlist, tfrules, *logs, *project, *jsonoutput, bucket, object, version)
+	if *jsonoutput {
 		Output(foundrules, "json")
-	}else{
+	} else {
 		Output(foundrules, "text")
 
 	}

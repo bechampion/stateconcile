@@ -15,9 +15,12 @@ import (
 )
 
 var r *regexp.Regexp
-func GetFirewallRules(project string, ignoreauto bool) []string {
-	green := color.New(color.FgGreen).SprintFunc()
-	fmt.Printf("[%s] Getting google_compute_firewall from googlecloud api for project:%s...", green("*"), project)
+
+func GetFirewallRules(project string, ignoreauto bool,jsonoutput bool) []string {
+	if jsonoutput == false {
+		green := color.New(color.FgGreen).SprintFunc()
+		fmt.Printf("[%s] Getting google_compute_firewall from googlecloud api for project:%s...\n", green("*"), project)
+	}
 	var fwlist []string
 	ctx := context.Background()
 	c, err := google.DefaultClient(ctx, compute.CloudPlatformScope)
@@ -49,12 +52,13 @@ func GetFirewallRules(project string, ignoreauto bool) []string {
 	}); err != nil {
 		log.Fatal(err)
 	}
-	fmt.Printf("%s\n", green("DONE"))
 	return fwlist
 }
-func DownloadTerraformState(w io.Writer, bucket, object string, destFileName string) error {
-	green := color.New(color.FgGreen).SprintFunc()
-	fmt.Printf("\n[%s] Downloading Terraform state from gs://%s/%s into %s...", green("*"), bucket, object, destFileName)
+func DownloadTerraformState(w io.Writer, bucket, object string, destFileName string, jsonoutput bool) error {
+	if jsonoutput == false {
+		green := color.New(color.FgGreen).SprintFunc()
+		fmt.Printf("\n[%s] Downloading Terraform state from gs://%s/%s into %s...\n", green("*"), bucket, object, destFileName)
+	}
 	ctx := context.Background()
 	client, err := storage.NewClient(ctx)
 	if err != nil {
@@ -80,6 +84,5 @@ func DownloadTerraformState(w io.Writer, bucket, object string, destFileName str
 	if err = f.Close(); err != nil {
 		return fmt.Errorf("f.Close: %v", err)
 	}
-	fmt.Printf("%s\n", green("DONE"))
 	return nil
 }
