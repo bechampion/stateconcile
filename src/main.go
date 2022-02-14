@@ -44,6 +44,28 @@ func Banner() {
 	fmt.Printf("\n(Finds differences between state and gcp and more..)\n")
 }
 
+func Output(foundrules map[string]logging.Payload, format string) {
+	if format == "text" {
+		red := color.New(color.FgRed).SprintFunc()
+		blue := color.New(color.FgBlue).SprintFunc()
+		for k, v := range foundrules {
+			fmt.Printf("%s google_compute_firewall.%s -> %s\n", red("*"), k, red("missing"))
+			if v != (logging.Payload{}) {
+				fmt.Printf("\t[%s]\n", blue("logs"))
+				fmt.Printf("\tTimeStamp:%s\n\tServiceName:%s\n\tResourceName:%s\n\tMethodName:%s\n\tPrincipalEmail:%s\n\tCallerIP:%s\n\tUserAgent:%s\n", red(v.TimeStamp), v.Payload.ServiceName, red(v.Payload.ResourceName), v.Payload.MethodName, red(v.Payload.AuthenticationInfo.PrincipalEmail), v.Payload.RequestMetaData.CallerIP, v.Payload.RequestMetaData.CallerSuppliedUserAgent)
+			}
+		}
+
+		fmt.Printf("\n")
+	} else {
+		jj,err := json.Marshal(foundrules)
+		if err != nil {
+			log.Fatal("Something went wrong")
+
+		}
+		fmt.Println(string(jj))
+	}
+}
 func BuildRules(terraformstate string) (int, map[string]bool) {
 	retlist := make(map[string]bool)
 	statefile, _ := os.Open(terraformstate)
@@ -107,8 +129,9 @@ func AddRandoms(fwlist []string) []string {
 	return fwlist
 }
 func main() {
-	var nobanner = flag.Bool("nobanner", true, "Want to see banner?")
+	var nobanner = flag.Bool("nobanner", false, "Want to see banner?")
 	var random = flag.Bool("random", false, "Insert Random Rules on GCP source")
+	var jsonoutput = flag.Bool("json", false, "Json Output")
 	var logs = flag.Bool("logs", false, "find logs matching the resources")
 	var ignoreauto = flag.Bool("ignoreauto", false, "Ignore GKE rules and others")
 	var project = flag.String("project", "", "Name of GCP project")
@@ -121,7 +144,7 @@ func main() {
 	if *state == "" {
 		log.Fatal("Error: -state gs://....., needed")
 	}
-	if *nobanner {
+	if !(*nobanner || *jsonoutput) {
 		Banner()
 	}
 	err := googleactions.DownloadTerraformState(os.Stdout, bucket, object, "working.tfstate")
@@ -137,19 +160,15 @@ func main() {
 		fwlist = AddRandoms(fwlist)
 	}
 	red := color.New(color.FgRed).SprintFunc()
-	blue := color.New(color.FgBlue).SprintFunc()
 	foundrules := FindRules(fwlist, tfrules, logs, project)
 	if len(foundrules) > 0 {
-		fmt.Printf("[%s] %s Rules found in GCP but missing in Terraform State: %s on Version: %s\n", red("*"), red(len(foundrules)),red("gs://", bucket, "/", object), red(version))
+		fmt.Printf("[%s] %s Rules found in GCP but missing in Terraform State: %s on Version: %s\n", red("*"), red(len(foundrules)), red("gs://", bucket, "/", object), red(version))
 	}
-	for k, v := range foundrules {
-		fmt.Printf("%s google_compute_firewall.%s -> %s\n", red("*"), k, red("missing"))
-		if v != (logging.Payload{}) {
-			fmt.Printf("\t[%s]\n", blue("logs"))
-			fmt.Printf("\tTimeStamp:%s\n\tServiceName:%s\n\tResourceName:%s\n\tMethodName:%s\n\tPrincipalEmail:%s\n\tCallerIP:%s\n\tUserAgent:%s\n", red(v.TimeStamp), v.Payload.ServiceName, red(v.Payload.ResourceName), v.Payload.MethodName, red(v.Payload.AuthenticationInfo.PrincipalEmail), v.Payload.RequestMetaData.CallerIP, v.Payload.RequestMetaData.CallerSuppliedUserAgent)
-		}
-	}
+	if *jsonoutput{ 
+		Output(foundrules, "json")
+	}else{
+		Output(foundrules, "text")
 
-	fmt.Printf("\n")
+	}
 
 }
