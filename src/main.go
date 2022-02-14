@@ -143,6 +143,7 @@ func main() {
 	var project = flag.String("project", "", "Name of GCP project")
 	var state = flag.String("state", "", "location gs://bucket/object")
 	flag.Parse()
+
 	bucket, object := ParseGSUri(*state)
 	if *project == "" {
 		log.Fatal("Error: -project string , needed")
@@ -166,11 +167,14 @@ func main() {
 		fwlist = AddRandoms(fwlist)
 	}
 	foundrules := FindRules(fwlist, tfrules, *logs, *project, *jsonoutput, bucket, object, version)
-	if *jsonoutput {
-		Output(foundrules, "json")
-	} else {
+	func(){
+		if *jsonoutput {
+			Output(foundrules, "json")
+			return 
+		}
 		Output(foundrules, "text")
+		return 
 
-	}
+	}()
 
 }
