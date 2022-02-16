@@ -83,7 +83,7 @@ func BuildRules(terraformstate string) (int, map[string]bool) {
 	}
 	return tfw.Version, retlist
 }
-func FindRules(targetrules []string, retlist map[string]bool, logs bool, project string, jsonoutput bool, bucket string, object string, version int) map[string]interface{}{
+func FindRules(targetrules []string, retlist map[string]bool, logs bool, project string, jsonoutput bool, bucket string, object string, version int) map[string]interface{} {
 	notfound := make(map[string]interface{})
 	if logs == true {
 		if jsonoutput == false {
@@ -99,7 +99,7 @@ func FindRules(targetrules []string, retlist map[string]bool, logs bool, project
 				if _, ok := hashedlogs[fmt.Sprintf("projects/%s/global/firewalls/%s", project, targetrules[i])]; ok {
 					notfound[targetrules[i]] = hashedlogs[fmt.Sprintf("projects/%s/global/firewalls/%s", project, targetrules[i])]
 				} else {
-					notfound[targetrules[i]]=false
+					notfound[targetrules[i]] = false
 				}
 
 			}

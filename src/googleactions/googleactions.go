@@ -16,7 +16,7 @@ import (
 
 var r *regexp.Regexp
 
-func GetFirewallRules(project string, ignoreauto bool,jsonoutput bool) []string {
+func GetFirewallRules(project string, ignoreauto bool, jsonoutput bool) []string {
 	if jsonoutput == false {
 		green := color.New(color.FgGreen).SprintFunc()
 		fmt.Printf("[%s] Getting google_compute_firewall from googlecloud api for project:%s...\n", green("*"), project)
