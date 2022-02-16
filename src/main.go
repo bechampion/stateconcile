@@ -1,14 +1,15 @@
 package main
 
 import (
+	googleactions "./googleactions"
 	routines "./routines"
-	googleactions"./googleactions"
 	"flag"
 	"fmt"
 	"github.com/fatih/color"
 	"log"
 	"os"
 )
+
 func main() {
 	var nobanner = flag.Bool("nobanner", false, "Want to see banner?")
 	var random = flag.Bool("random", false, "Insert Random Rules on GCP source")
@@ -42,14 +43,6 @@ func main() {
 		fwlist = routines.AddRandoms(fwlist)
 	}
 	foundrules := routines.FindRules(fwlist, tfrules, *logs, *project, *jsonoutput, bucket, object, version)
-	func(){
-		if *jsonoutput {
-			routines.Output(foundrules, "json")
-			return 
-		}
-		routines.Output(foundrules, "text")
-		return 
-
-	}()
+	routines.Output(foundrules, *jsonoutput)
 
 }

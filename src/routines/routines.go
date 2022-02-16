@@ -42,8 +42,8 @@ func Banner() {
 	fmt.Printf("\n(Finds differences between state and gcp and more..)\n")
 }
 
-func Output(foundrules map[string]logging.Payload, format string) {
-	if format == "text" {
+func Output(foundrules map[string]logging.Payload, jsonoutput bool) {
+	if !jsonoutput {
 		red := color.New(color.FgRed).SprintFunc()
 		blue := color.New(color.FgBlue).SprintFunc()
 		for k, v := range foundrules {
