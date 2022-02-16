@@ -60,7 +60,6 @@ func Output(foundrules map[string]interface{}, jsonoutput bool) {
 		jj, err := json.Marshal(foundrules)
 		if err != nil {
 			log.Fatal("Something went wrong")
-
 		}
 		fmt.Println(string(jj))
 	}
