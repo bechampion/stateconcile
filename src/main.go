@@ -37,6 +37,7 @@ func main() {
 	}
 	version, tfrules := routines.BuildRules("working.tfstate")
 	fwlist := googleactions.GetFirewallRules(*project, *ignoreauto, *jsonoutput)
+	//this needs its own function
 	if *random == true && *jsonoutput == false {
 		yellow := color.New(color.FgYellow).SprintFunc()
 		fmt.Printf("[%s] Adding random soruce rules", yellow("*"))
