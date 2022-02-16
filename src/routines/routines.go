@@ -42,15 +42,16 @@ func Banner() {
 	fmt.Printf("\n(Finds differences between state and gcp and more..)\n")
 }
 
-func Output(foundrules map[string]logging.Payload, jsonoutput bool) {
+func Output(foundrules map[string]interface{}, jsonoutput bool) {
 	if !jsonoutput {
 		red := color.New(color.FgRed).SprintFunc()
 		blue := color.New(color.FgBlue).SprintFunc()
 		for k, v := range foundrules {
 			fmt.Printf("%s google_compute_firewall.%s -> %s\n", red("*"), k, red("missing"))
-			if v != (logging.Payload{}) {
+			if v != false {
+				vv := v.(logging.Payload)
 				fmt.Printf("\t[%s]\n", blue("logs"))
-				fmt.Printf("\tTimeStamp:%s\n\tServiceName:%s\n\tResourceName:%s\n\tMethodName:%s\n\tPrincipalEmail:%s\n\tCallerIP:%s\n\tUserAgent:%s\n", red(v.TimeStamp), v.Payload.ServiceName, red(v.Payload.ResourceName), v.Payload.MethodName, red(v.Payload.AuthenticationInfo.PrincipalEmail), v.Payload.RequestMetaData.CallerIP, v.Payload.RequestMetaData.CallerSuppliedUserAgent)
+				fmt.Printf("\tTimeStamp:%s\n\tServiceName:%s\n\tResourceName:%s\n\tMethodName:%s\n\tPrincipalEmail:%s\n\tCallerIP:%s\n\tUserAgent:%s\n", red(vv.TimeStamp), vv.Payload.ServiceName, red(vv.Payload.ResourceName), vv.Payload.MethodName, red(vv.Payload.AuthenticationInfo.PrincipalEmail), vv.Payload.RequestMetaData.CallerIP, vv.Payload.RequestMetaData.CallerSuppliedUserAgent)
 			}
 		}
 
@@ -83,8 +84,8 @@ func BuildRules(terraformstate string) (int, map[string]bool) {
 	}
 	return tfw.Version, retlist
 }
-func FindRules(targetrules []string, retlist map[string]bool, logs bool, project string, jsonoutput bool, bucket string, object string, version int) map[string]logging.Payload {
-	notfound := make(map[string]logging.Payload)
+func FindRules(targetrules []string, retlist map[string]bool, logs bool, project string, jsonoutput bool, bucket string, object string, version int) map[string]interface{}{
+	notfound := make(map[string]interface{})
 	if logs == true {
 		if jsonoutput == false {
 			yellow := color.New(color.FgYellow).SprintFunc()
@@ -99,7 +100,7 @@ func FindRules(targetrules []string, retlist map[string]bool, logs bool, project
 				if _, ok := hashedlogs[fmt.Sprintf("projects/%s/global/firewalls/%s", project, targetrules[i])]; ok {
 					notfound[targetrules[i]] = hashedlogs[fmt.Sprintf("projects/%s/global/firewalls/%s", project, targetrules[i])]
 				} else {
-					notfound[targetrules[i]] = logging.Payload{}
+					notfound[targetrules[i]]=false
 				}
 
 			}
