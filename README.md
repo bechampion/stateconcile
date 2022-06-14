@@ -19,5 +19,11 @@ Generates random firwall entries on the GCP side , to prove a point
 ## logs
 `-logs` : Look in stackdriver for information about the firewall rule created outside the state
 
+## random 
+`-random` : Insert Random firewall rules into the stack to generate some synthetic drift
+
+## ignoreauth
+`-ignoreauto` : Ignore GKE generated firewall rules for example
+
 ## Sample Output:
 ![stateconcile](/img/output.png)
